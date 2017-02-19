@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { Component } from 'react';
 import { Meteor } from 'meteor/meteor';
 import { ExchangeRates } from './collections';
 import { Tracker } from 'meteor/tracker';
@@ -68,29 +68,58 @@ function convertAmount(amount, toCurrency, fromCurrency) {
   return convertedAmount;
 }
 
-function formatAmount(amount, toCurrencyCode, fromCurrencyCode) {
-  const toCurrency = toCurrencyCode ? codeToCurrency(toCurrencyCode) : getLocalCurrency();
-  const fromCurrency = fromCurrencyCode ? codeToCurrency(toCurrencyCode) : getDefaultCurrency();
-  amount = convertAmount(amount, toCurrency, fromCurrency);
+class CurrencyAmount extends Component {
+  render(){
+    const toCurrency = codeToCurrency(this.props.toCurrencyCode);
+    const fromCurrency = codeToCurrency(this.props.fromCurrencyCode);
+    const amount = Math.abs(convertAmount(this.props.amount, toCurrency, fromCurrency));
+    const negative = this.props.amount < 0;
+    const country = currencyToCountry(toCurrency);
+    const integerAmount = Math.floor(amount);
+    const fractionAmount = amount.toFixed(toCurrency.decimals).substr(-toCurrency.decimals);
 
-  const country = currencyToCountry(toCurrency);
-  const integerAmount = Math.floor(amount);
-  const fractionAmount = amount.toFixed(toCurrency.decimals).substr(-toCurrency.decimals);
 
-  return (
-    <span className="currency-caribou amount">
-      <span className="symbol">{toCurrency.symbol}</span>
-      <span className="integer">{integerAmount}</span>
-      {toCurrency.decimals ? (
-        <span className="fraction-portion">
-          <span className="point">.</span>
-          <span className="fraction">{fractionAmount}</span>
-        </span>
-      ) : null}
-      <i className={country.alpha2.toLowerCase() + ' flag'} />
-      <span className="code">{toCurrency.code}</span>
-    </span>
-  )
+    const className = 'currency-caribou amount' +
+      (this.props.raisedFraction ? ' raised-fraction' : '') +
+      (negative ? ' negative' : '');
+
+    return (
+      <span className={className}>
+        {this.props.symbol && !this.props.currencyOnly && negative ? <span className="minus">-</span> : null}
+        {this.props.symbol && !this.props.currencyOnly ? <span className="symbol">{toCurrency.symbol}</span> : null}
+        {!this.props.currencyOnly ? <span className="integer">{integerAmount}</span> : null}
+        {toCurrency.decimals && !this.props.excludeFraction && !this.props.currencyOnly ? (
+          <span className="fraction-portion">
+            <span className="point">.</span>
+            <span className="fraction">{fractionAmount}</span>
+          </span>
+        ) : null}
+        {this.props.flag ? <i className={country.alpha2.toLowerCase() + ' flag'} /> : null }
+        {this.props.code ? <span className="code">{toCurrency.code}</span> : null }
+      </span>
+    )
+  }
 }
 
-export { formatAmount, observeCurrency, localCountry, getLocalCurrency };
+CurrencyAmount.propTypes = {
+  raisedFraction: React.PropTypes.bool,
+  excludeFraction: React.PropTypes.bool,
+  flag: React.PropTypes.bool,
+  currencyOnly: React.PropTypes.bool,
+  code: React.PropTypes.bool,
+  symbol: React.PropTypes.bool,
+  amount: React.PropTypes.number,
+  toCurrencyCode: React.PropTypes.string,
+  fromCurrencyCode: React.PropTypes.string,
+}
+CurrencyAmount.defaultProps = {
+  excludeFraction: false,
+  symbol: true,
+  flag: false,
+  code: false,
+  raisedFraction: false,
+  toCurrencyCode: getLocalCurrency().code,
+  fromCurrencyCode: getDefaultCurrency().code,
+}
+
+export { CurrencyAmount, convertAmount, observeCurrency, localCountry, getLocalCurrency };

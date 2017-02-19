@@ -1,5 +1,5 @@
 import { Meteor } from 'meteor/meteor';
 import { ExchangeRates } from './collections';
-import { formatAmount, observeCurrency, localCountry, getLocalCurrency } from './shared';
+import { CurrencyAmount, convertAmount, observeCurrency, localCountry, getLocalCurrency  } from './shared';
 
-export { formatAmount, observeCurrency, localCountry, getLocalCurrency };
+export { CurrencyAmount, convertAmount, observeCurrency, localCountry, getLocalCurrency  };
