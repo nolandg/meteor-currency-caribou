@@ -1,0 +1,25 @@
+[
+  {
+    "alpha2": "US",
+    "alpha3": "USA",
+    "currencies": [
+      "USD"
+    ],
+    "languages": [
+      "eng"
+    ],
+    "name": "United States"
+  },
+  {
+    "alpha2": "CA",
+    "alpha3": "CAN",
+    "currencies": [
+      "CAD"
+    ],
+    "languages": [
+       "eng",
+       "fra"
+     ],
+    "name": "Canada"
+  }
+]

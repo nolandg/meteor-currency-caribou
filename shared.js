@@ -1,94 +1,52 @@
 import React from 'react';
 import { Meteor } from 'meteor/meteor';
 import { ExchangeRates } from './collections';
+import { Tracker } from 'meteor/tracker';
+import currencies from './currency-data';
+const countries = require('./country-data.json');
 
-function subscribeToExchangeRates() {
+const dependency = new Tracker.Dependency()
+
+function observeCurrency(){
+  dependency.depend();
   Meteor.subscribe('currency-caribou.exchangerates');
 }
 
 Meteor.startup(()=>{
-  subscribeToExchangeRates();
+  Meteor.subscribe('currency-caribou.exchangerates');
+
+  ExchangeRates.find({}, { sort: { timestamp: -1 } }).observe({
+    added: ()=>{ dependency.changed(); },
+  });
 });
 
-function countryToCurrency(country) {
-  // This migh be better in the future: https://www.npmjs.com/package/country-data
-  country = country.toUpperCase();
-  switch (country) {
-    case 'US': return 'USD';
-    case 'CA':
-    default: return 'CAD';
-  }
+function alpha2ToCountry(alpha2){
+  return countries.find((c) => { return c.alpha2 === alpha2 });
+}
+function codeToCurrency(code){
+  return currencies.find((c) => { return c.code === code });
+}
+function alpha2ToCurrency(alpha2) {
+  const country = alpha2ToCountry(alpha2)
+  if(country) return codeToCurrency(country.currencies[0]);
+  return null;
+}
+function currencyToCountry(code) {
+  if(typeof code === 'object') code = code.code;
+  return countries.find((c) => { return c.currencies[0] === code });
 }
 
-function countryToSymbol(country) {
-  // This migh be better in the future: https://www.npmjs.com/package/country-data
-  country = country.toUpperCase();
-  switch (country) {
-    case 'US': return '$';
-    case 'CA':
-    default: return '$';
-  }
-}
-
-function countryToDecimals(country) {
-  // This migh be better in the future: https://www.npmjs.com/package/country-data
-  country = country.toUpperCase();
-  switch (country) {
-    case 'US': return 2;
-    case 'CA':
-    default: return 2;
-  }
-}
-
-function currencyToCountry(currency) {
-  // This migh be better in the future: https://www.npmjs.com/package/country-data
-  currency = currency.toUpperCase();
-  switch (currency) {
-    case 'USD': return 'US';
-    case 'CAD':
-    default: return 'CA';
-  }
-}
-
-function currencyToSymbol(currency) {
-  // This migh be better in the future: https://www.npmjs.com/package/country-data
-  currency = currency.toUpperCase();
-  switch (currency) {
-    case 'USD': return '$';
-    case 'CAD':
-    default: return '$';
-  }
-}
-
-function currencyToDecimals(currency) {
-  // This migh be better in the future: https://www.npmjs.com/package/country-data
-  currency = currency.toUpperCase();
-  switch (currency) {
-    case 'USD': return 2;
-    case 'CAD':
-    default: return 2;
-  }
-}
-
-let localCountry;
-let localCurrency;
-let localCurrencySymbol;
-let localCurrencyDecimals;
-
-function updateLocals(country) {
-  localCountry = country;
-  localCurrency = countryToCurrency(localCountry);
-  localCurrencySymbol = countryToSymbol(localCountry);
-  localCurrencyDecimals = countryToDecimals(localCountry);
-}
-updateLocals(Meteor.settings.public.currencyCaribou.defaultCountry);
+function getDefaultCountry() { return Meteor.settings.public.currencyCaribou.defaultCountry; }
+let localCountry = alpha2ToCountry(getDefaultCountry());
+function getLocalCurrency(){ return alpha2ToCurrency(localCountry.alpha2); }
+function getDefaultCurrency() { return alpha2ToCurrency(Meteor.settings.public.currencyCaribou.defaultCountry); }
 
 if (Meteor.isClient) {
   // send a request for the geoip data and save it when it arrives
   $.getJSON('https://freegeoip.net/json/')
     .done((data) => {
-      //updateLocals(data.country_code);
-      updateLocals('US');
+      localCountry = alpha2ToCountry(data.country_code);
+      dependency.changed();
     })
     .fail((jqxhr, textStatus, error) => {
       console.log('Error geolocating IP address: ', error);
@@ -101,41 +59,38 @@ function getLatestExchangeRates(){
 
 function convertAmount(amount, toCurrency, fromCurrency) {
   const latestRates = getLatestExchangeRates();
-console.log(localCurrency);
   let rate = 1;
   if (latestRates) {
-    rate = latestRates.rates[toCurrency]/latestRates.rates[fromCurrency];
+    rate = latestRates.rates[toCurrency.code]/latestRates.rates[fromCurrency.code];
   }
 
   const convertedAmount = amount * rate;
   return convertedAmount;
 }
 
-function formatAmount(amount, toCurrency, fromCurrency) {
-  fromCurrency = fromCurrency || countryToCurrency(Meteor.settings.public.currencyCaribou.defaultCountry);
-  toCurrency = toCurrency || localCurrency;
+function formatAmount(amount, toCurrencyCode, fromCurrencyCode) {
+  const toCurrency = toCurrencyCode ? codeToCurrency(toCurrencyCode) : getLocalCurrency();
+  const fromCurrency = fromCurrencyCode ? codeToCurrency(toCurrencyCode) : getDefaultCurrency();
   amount = convertAmount(amount, toCurrency, fromCurrency);
 
-  const decimals = currencyToDecimals(toCurrency);
-  const symbol = currencyToSymbol(toCurrency);
   const country = currencyToCountry(toCurrency);
   const integerAmount = Math.floor(amount);
-  const fractionAmount = amount.toFixed(decimals).substr(-decimals);
+  const fractionAmount = amount.toFixed(toCurrency.decimals).substr(-toCurrency.decimals);
 
   return (
     <span className="currency-caribou amount">
-      <span className="symbol">{symbol}</span>
+      <span className="symbol">{toCurrency.symbol}</span>
       <span className="integer">{integerAmount}</span>
-      {decimals ? (
+      {toCurrency.decimals ? (
         <span className="fraction-portion">
           <span className="point">.</span>
           <span className="fraction">{fractionAmount}</span>
         </span>
       ) : null}
-      <i className={country.toLowerCase() + ' flag'} />
-      <span className="code">{toCurrency}</span>
+      <i className={country.alpha2.toLowerCase() + ' flag'} />
+      <span className="code">{toCurrency.code}</span>
     </span>
   )
 }
 
-export { formatAmount, subscribeToExchangeRates, getLatestExchangeRates, localCurrency };
+export { formatAmount, observeCurrency, localCountry, getLocalCurrency };

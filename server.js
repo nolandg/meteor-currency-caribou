@@ -4,16 +4,16 @@ import request from 'request';
 import { SyncedCron as syncedCron } from 'meteor/percolate:synced-cron';
 import { ExchangeRates } from './collections';
 import './publications';
-import { formatAmount, subscribeToExchangeRates, getLatestExchangeRates, localCurrency } from './shared';
+import { formatAmount, observeCurrency, localCountry, getLocalCurrency  } from './shared';
 
-export { formatAmount, subscribeToExchangeRates, getLatestExchangeRates, localCurrency };
+export { formatAmount, observeCurrency, localCountry, getLocalCurrency  };
 
 function addNewRates(rates, base, timestamp) {
   // remove all but latest rates
   const oldRates = ExchangeRates.find({}, { sort: { timestamp: 1 } }).fetch();
   oldRates.forEach((rate, i) => {
-    if (i === oldRates.length - 1) return;
-    ExchangeRates.remove(rates._id);
+    if (i === (oldRates.length - 1)) return;
+    ExchangeRates.remove(rate._id);
   });
 
   ExchangeRates.insert({ rates, base, timestamp });
@@ -38,7 +38,7 @@ syncedCron.add({
   name: 'Update exchange rates',
   schedule(parser) {
     // parser is a later.parse object
-    return parser.text('every 1 hour');
+    return parser.text('every 3 hours');
   },
   job() {
     updateExchangeRates();
