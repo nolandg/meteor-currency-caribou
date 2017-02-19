@@ -1,10 +1,14 @@
-import { React } from 'react';
+import React from 'react';
 import { Meteor } from 'meteor/meteor';
 import { ExchangeRates } from './collections';
 
 function subscribeToExchangeRates() {
   Meteor.subscribe('currency-caribou.exchangerates');
 }
+
+Meteor.startup(()=>{
+  subscribeToExchangeRates();
+});
 
 function countryToCurrency(country) {
   // This migh be better in the future: https://www.npmjs.com/package/country-data
@@ -49,7 +53,7 @@ function currencyToCountry(currency) {
 function currencyToSymbol(currency) {
   // This migh be better in the future: https://www.npmjs.com/package/country-data
   currency = currency.toUpperCase();
-  switch (country) {
+  switch (currency) {
     case 'USD': return '$';
     case 'CAD':
     default: return '$';
@@ -59,7 +63,7 @@ function currencyToSymbol(currency) {
 function currencyToDecimals(currency) {
   // This migh be better in the future: https://www.npmjs.com/package/country-data
   currency = currency.toUpperCase();
-  switch (country) {
+  switch (currency) {
     case 'USD': return 2;
     case 'CAD':
     default: return 2;
@@ -83,7 +87,8 @@ if (Meteor.isClient) {
   // send a request for the geoip data and save it when it arrives
   $.getJSON('https://freegeoip.net/json/')
     .done((data) => {
-      updateLocals(data.country_code);
+      //updateLocals(data.country_code);
+      updateLocals('US');
     })
     .fail((jqxhr, textStatus, error) => {
       console.log('Error geolocating IP address: ', error);
@@ -96,10 +101,10 @@ function getLatestExchangeRates(){
 
 function convertAmount(amount, toCurrency, fromCurrency) {
   const latestRates = getLatestExchangeRates();
-
+console.log(localCurrency);
   let rate = 1;
   if (latestRates) {
-    rate = latestRates.rates[fromCurrency]/latestRates.rates[toCurrency];
+    rate = latestRates.rates[toCurrency]/latestRates.rates[fromCurrency];
   }
 
   const convertedAmount = amount * rate;
@@ -110,15 +115,15 @@ function formatAmount(amount, toCurrency, fromCurrency) {
   fromCurrency = fromCurrency || countryToCurrency(Meteor.settings.public.currencyCaribou.defaultCountry);
   toCurrency = toCurrency || localCurrency;
   amount = convertAmount(amount, toCurrency, fromCurrency);
-  
+
   const decimals = currencyToDecimals(toCurrency);
   const symbol = currencyToSymbol(toCurrency);
   const country = currencyToCountry(toCurrency);
   const integerAmount = Math.floor(amount);
-  const fractionAmount = (amount % 1).toFixed(decimals);
+  const fractionAmount = amount.toFixed(decimals).substr(-decimals);
 
   return (
-    <span className="amount">
+    <span className="currency-caribou amount">
       <span className="symbol">{symbol}</span>
       <span className="integer">{integerAmount}</span>
       {decimals ? (
@@ -127,10 +132,10 @@ function formatAmount(amount, toCurrency, fromCurrency) {
           <span className="fraction">{fractionAmount}</span>
         </span>
       ) : null}
-      <span className="code">{toCurrency}</span>
       <i className={country.toLowerCase() + ' flag'} />
+      <span className="code">{toCurrency}</span>
     </span>
   )
 }
 
-export { formatAmount, subscribeToExchangeRates, getLatestExchangeRates };
+export { formatAmount, subscribeToExchangeRates, getLatestExchangeRates, localCurrency };

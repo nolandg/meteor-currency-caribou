@@ -4,9 +4,9 @@ import request from 'request';
 import { SyncedCron as syncedCron } from 'meteor/percolate:synced-cron';
 import { ExchangeRates } from './collections';
 import './publications';
-import { formatAmount, subscribeToExchangeRates, getLatestExchangeRates } from './shared';
+import { formatAmount, subscribeToExchangeRates, getLatestExchangeRates, localCurrency } from './shared';
 
-export { formatAmount, subscribeToExchangeRates, getLatestExchangeRates };
+export { formatAmount, subscribeToExchangeRates, getLatestExchangeRates, localCurrency };
 
 function addNewRates(rates, base, timestamp) {
   // remove all but latest rates
