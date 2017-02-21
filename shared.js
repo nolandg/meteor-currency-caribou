@@ -37,7 +37,7 @@ function currencyToCountry(code) {
 }
 
 function getDefaultCountry() { return alpha2ToCountry(Meteor.settings.public.currencyCaribou.defaultCountry); }
-let localCountry = alpha2ToCountry(getDefaultCountry());
+let localCountry = getDefaultCountry();
 function getLocalCurrency(){ return alpha2ToCurrency(localCountry.alpha2); }
 function getDefaultCurrency() { return alpha2ToCurrency(Meteor.settings.public.currencyCaribou.defaultCountry); }
 
