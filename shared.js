@@ -36,7 +36,7 @@ function currencyToCountry(code) {
   return countries.find((c) => { return c.currencies[0] === code });
 }
 
-function getDefaultCountry() { return Meteor.settings.public.currencyCaribou.defaultCountry; }
+function getDefaultCountry() { return alpha2ToCountry(Meteor.settings.public.currencyCaribou.defaultCountry); }
 let localCountry = alpha2ToCountry(getDefaultCountry());
 function getLocalCurrency(){ return alpha2ToCurrency(localCountry.alpha2); }
 function getDefaultCurrency() { return alpha2ToCurrency(Meteor.settings.public.currencyCaribou.defaultCountry); }
