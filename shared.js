@@ -45,7 +45,12 @@ if (Meteor.isClient) {
   // send a request for the geoip data and save it when it arrives
   $.getJSON('https://freegeoip.net/json/')
     .done((data) => {
+      if(!data.country_code){
+        console.log('Error geolocating IP address, no country code: ', error);
+        return;
+      }
       localCountry = alpha2ToCountry(data.country_code);
+      if(!localCountry) localCountry
       dependency.changed();
     })
     .fail((jqxhr, textStatus, error) => {
