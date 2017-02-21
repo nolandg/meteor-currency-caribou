@@ -50,8 +50,10 @@ if (Meteor.isClient) {
         console.log('Error geolocating IP address, no country code: ', error);
         return;
       }
-      localCountry = alpha2ToCountry(data.country_code);
-      if(!localCountry) localCountry
+
+      const newLocalCountry = alpha2ToCountry(data.country_code);
+      if(newLocalCountry) localCountry = newLocalCountry;
+
       dependency.changed();
     })
     .fail((jqxhr, textStatus, error) => {
