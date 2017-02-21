@@ -7,6 +7,8 @@ const countries = require('./country-data.json');
 
 const dependency = new Tracker.Dependency()
 
+let localCountry = getDefaultCountry();
+
 function observeCurrency(){
   dependency.depend();
   Meteor.subscribe('currency-caribou.exchangerates');
@@ -37,7 +39,6 @@ function currencyToCountry(code) {
 }
 
 function getDefaultCountry() { return alpha2ToCountry(Meteor.settings.public.currencyCaribou.defaultCountry); }
-let localCountry = getDefaultCountry();
 function getLocalCurrency(){ return alpha2ToCurrency(localCountry.alpha2); }
 function getDefaultCurrency() { return alpha2ToCurrency(Meteor.settings.public.currencyCaribou.defaultCountry); }
 
